@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { membersRouter } from './members';
-import { billingRouter } from './billing';
-import { analyticsRouter } from './analytics';
-import { automationsRouter } from './automations';
-import { businessRouter } from './business';
+import { membersRouter } from './members.js';
+import { billingRouter } from './billing.js';
+import { analyticsRouter } from './analytics.js';
+import { automationsRouter } from './automations.js';
+import { businessRouter } from './business.js';
 
 export const apiRouter = Router();
 

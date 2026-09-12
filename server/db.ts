@@ -1,6 +1,6 @@
 import { MongoClient, Db, Collection, Filter } from 'mongodb';
 import dotenv from 'dotenv';
-import { whatsapp, SendResult, AutomationTrigger } from './whatsapp';
+import { whatsapp, SendResult, AutomationTrigger } from './whatsapp.js';
 import {
   PersistableDB,
   Member,
@@ -18,7 +18,7 @@ import {
   OverviewAnalytics,
   ForecastDay,
   BusinessSummary,
-} from './types';
+} from './types.js';
 
 dotenv.config();
 

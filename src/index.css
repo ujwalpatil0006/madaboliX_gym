@@ -4,7 +4,7 @@
   :root {
     --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-mono: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   body {
@@ -22,6 +22,7 @@
 
   .font-mono, .font-telemetry {
     font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 }
 

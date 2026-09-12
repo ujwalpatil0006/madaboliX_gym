@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  Calendar,
   TrendingUp,
-  ChevronRight,
   UserPlus,
   Zap,
   QrCode,
   IndianRupee,
-  RefreshCw,
 } from 'lucide-react';
 import { Member, BranchLocation } from '../types';
 
@@ -26,8 +23,37 @@ interface DashboardScreenProps {
   onOpenRenewModal: (member?: Member) => void;
   onOpenQRTerminal: () => void;
   onOpenCollectFee: () => void;
-  onViewAllMembers: () => void;
 }
+
+const FALLBACK_MONTHLY_VELOCITY: Record<string, number> = {
+  'Jatra Hotel': 88500,
+  Adgaon: 64000,
+};
+
+// Fixed 14-day intensity wave (0..1); scaled per selected branch mix
+const VELOCITY_PATTERN = [0.62, 0.55, 0.68, 0.6, 0.74, 0.9, 0.82, 0.66, 0.58, 0.72, 0.64, 0.8, 0.95, 0.88];
+
+// Catmull-Rom -> cubic bezier smoothing for the velocity curve
+const buildVelocityPaths = (series: number[]) => {
+  const max = Math.max(...series, 1);
+  const pts = series.map((v, i) => ({
+    x: series.length > 1 ? (i / (series.length - 1)) * 300 : 150,
+    y: 58 - (v / max) * 50,
+  }));
+  let line = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(i - 1, 0)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(i + 2, pts.length - 1)];
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    line += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return { linePath: line, areaPath: `${line} L 300 60 L 0 60 Z` };
+};
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   currentBranch,
@@ -38,10 +64,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onOpenRenewModal,
   onOpenQRTerminal,
   onOpenCollectFee,
-  onViewAllMembers,
 }) => {
-  const [selectedDate, setSelectedDate] = useState('Today, Oct 24');
-
   // Urgent attention members (branch already filtered upstream)
   const needsAttentionMembers = members.filter(
     (m) => m.status === 'expiring' || m.status === 'expired'
@@ -50,8 +73,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   // Monthly revenue run-rate (branch-aware overview)
   const mrr = overview?.monthlyRevenueRunRate;
-  const mrrText = mrr ? `₹${mrr.toLocaleString('en-IN')}` : '₹1,48,500';
-  const arrText = mrr ? `ARR: ₹${((mrr * 12) / 100000).toFixed(1)}L run rate` : 'ARR: ₹17.8L run rate';
 
   // Revenue distribution rows (only selected branch, or combined for All Locations)
   const branchRows = branchAnalytics
@@ -60,32 +81,40 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const branchTotal = branchRows.reduce((acc, b) => acc + b.mrrRunRate, 0);
   const rowColor: Record<string, string> = { 'Jatra Hotel': '#0284c7', Adgaon: '#38bdf8' };
 
+  // Fall back to live branch analytics when the overview endpoint is unavailable
+  const mrrText = mrr ? `₹${mrr.toLocaleString('en-IN')}` : branchTotal > 0 ? `₹${branchTotal.toLocaleString('en-IN')}` : '₹1,48,500';
+  const arrText = mrr ? `ARR: ₹${((mrr * 12) / 100000).toFixed(1)}L run rate` : branchTotal > 0 ? `ARR: ₹${((branchTotal * 12) / 100000).toFixed(1)}L run rate` : 'ARR: ₹17.8L run rate';
+
+  // 14-day velocity trend: scaled to the selected branch mix (frontend-derived)
+  const velocityBranches =
+    branchAnalytics && branchAnalytics.length > 0
+      ? branchAnalytics.filter((b) => currentBranch === 'All Locations' || b.name === currentBranch)
+      : Object.keys(FALLBACK_MONTHLY_VELOCITY)
+          .filter((name) => currentBranch === 'All Locations' || name === currentBranch)
+          .map((name) => ({ name, mrrRunRate: FALLBACK_MONTHLY_VELOCITY[name] }));
+
+  const velocitySeries = VELOCITY_PATTERN.map((p) =>
+    velocityBranches.reduce((sum, b) => {
+      const monthly = b.mrrRunRate || FALLBACK_MONTHLY_VELOCITY[b.name] || 0;
+      return sum + (monthly / 30) * p;
+    }, 0)
+  );
+  const priorWeek = velocitySeries.slice(0, 7).reduce((a, b) => a + b, 0);
+  const latestWeek = velocitySeries.slice(7).reduce((a, b) => a + b, 0);
+  const velocityGrowth = priorWeek > 0 ? ((latestWeek - priorWeek) / priorWeek) * 100 : 0;
+  const { linePath: velocityLinePath, areaPath: velocityAreaPath } = buildVelocityPaths(velocitySeries);
+
   return (
     <div className="space-y-4 pb-20 animate-in fade-in duration-200">
       {/* Sub-header & Title */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-[#0284c7]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7] inline-block animate-pulse" />
-            TELEMETRY CORE
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-display text-[#0b1c30] tracking-tight mt-0.5">
-            Executive Control
-          </h1>
+      <div>
+        <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-[#0284c7]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7] inline-block animate-pulse" />
+          Overview
         </div>
-
-        {/* Date Selector Pill */}
-        <button
-          type="button"
-          onClick={() => {
-            const next = selectedDate === 'Today, Oct 24' ? 'Live Telemetry' : 'Today, Oct 24';
-            setSelectedDate(next);
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#e2e8f0] shadow-xs text-xs font-semibold text-[#0b1c30] hover:border-[#0284c7] transition-all"
-        >
-          <Calendar className="w-3.5 h-3.5 text-[#0284c7]" />
-          <span>{selectedDate}</span>
-        </button>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display text-[#0b1c30] tracking-tight mt-0.5">
+          Recent Activity
+        </h1>
       </div>
 
       {/* Top 2 KPI Metric Cards */}
@@ -133,7 +162,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               </span>
             </div>
             <div className="text-[11px] font-mono text-[#006194] font-semibold mt-0.5">
-              ₹{(renewalPipeline || 38200).toLocaleString('en-IN')} pipeline
+              ₹{renewalPipeline.toLocaleString('en-IN')} expected
             </div>
           </div>
         </div>
@@ -142,7 +171,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Quick Dispatch Grid */}
       <div className="space-y-2">
         <span className="text-[10px] font-mono font-semibold tracking-wider text-[#64748b] uppercase">
-          QUICK DISPATCH
+          QUICK ACTIONS
         </span>
 
         <div className="grid grid-cols-2 gap-3">
@@ -193,7 +222,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               QR Terminal
             </div>
             <div className="text-[10px] text-[#64748b] mt-0.5">
-              Check-in turnstile
+              Check-in via QR
             </div>
           </button>
 
@@ -220,7 +249,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <div className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs space-y-3">
         <div>
           <span className="text-[10px] font-mono font-semibold tracking-wider text-[#64748b] uppercase">
-            REVENUE DISTRIBUTION
+            BRANCH REVENUE
           </span>
           <div className="flex items-center justify-between mt-0.5">
             <h3 className="text-sm font-bold font-display text-[#0b1c30]">
@@ -268,10 +297,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <div className="pt-2 border-t border-slate-100">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-mono font-semibold tracking-wider text-[#64748b]">
-              14-DAY VELOCITY
+              14-DAY TREND • {currentBranch === 'All Locations' ? 'All branches' : currentBranch}
             </span>
             <span className="text-[11px] font-mono font-bold text-[#0284c7]">
-              +18.2% vs target
+              {velocityGrowth >= 0 ? '+' : ''}{velocityGrowth.toFixed(1)}% vs prior week
             </span>
           </div>
 
@@ -288,11 +317,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </linearGradient>
               </defs>
               <path
-                d="M 0 45 C 50 48, 80 32, 120 40 C 160 48, 200 15, 240 22 C 270 28, 290 12, 300 15 L 300 60 L 0 60 Z"
+                d={velocityAreaPath}
                 fill="url(#velocityGrad)"
               />
               <path
-                d="M 0 45 C 50 48, 80 32, 120 40 C 160 48, 200 15, 240 22 C 270 28, 290 12, 300 15"
+                d={velocityLinePath}
                 fill="none"
                 stroke="#0284c7"
                 strokeWidth="2.5"
@@ -301,72 +330,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </svg>
           </div>
         </div>
-      </div>
-
-      {/* Needs Attention Section */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold font-display text-[#0b1c30]">
-              Needs Attention
-            </h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold text-[#ba1a1a] border border-[#ffdad6] bg-[#fff5f5]">
-              {needsAttentionMembers.length > 0 ? `${needsAttentionMembers.length} Expiring` : 'All Clear'}
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={onViewAllMembers}
-            className="text-xs font-mono font-semibold text-[#0284c7] hover:underline"
-          >
-            View All
-          </button>
-        </div>
-
-        {/* Attention Member Cards */}
-        {needsAttentionMembers.map((member) => (
-          <div
-            key={member.id}
-            className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs space-y-3 hover:border-[#bae6fd] transition-all"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <img
-                  src={member.avatar}
-                  alt={member.name}
-                  className="w-12 h-12 rounded-xl object-cover ring-1 ring-slate-200"
-                />
-                <div>
-                  <h4 className="text-sm font-bold font-display text-[#0b1c30]">
-                    {member.name}
-                  </h4>
-                  <p className="text-xs text-[#64748b]">
-                    {member.plan} • <span className="text-[#ba1a1a] font-medium">{member.lastActive}</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <span className="text-sm sm:text-base font-bold font-mono text-[#0b1c30]">
-                  ₹{member.amountDue?.toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => onOpenRenewModal(member)}
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#0284c7] text-white hover:bg-[#0369a1] font-semibold text-xs transition-all shadow-xs"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Renew Now</span>
-              </button>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

@@ -1,25 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   BellRing,
-  MessageSquare,
-  Mail,
-  RefreshCw,
+  Zap,
+  Loader2,
   Phone,
+  Mail,
   UserX,
   CalendarX2,
-  FlaskConical,
 } from 'lucide-react';
 import { Member } from '../types';
 
+export type AlertKind = 'expiry' | 'overdue' | 'churn';
+
 interface GymPassAlertScreenProps {
   members: Member[];
-  onSendWhatsApp: (member: Member, kind: 'expiry' | 'overdue' | 'churn') => void;
-  onSendEmail: (member: Member) => void;
-  onOpenRenew: (member: Member) => void;
-  onSendTestAutomation?: () => void;
+  onRunAutonomous: (kind: AlertKind, members: Member[]) => Promise<void>;
 }
-
-type AlertKind = 'expiry' | 'overdue' | 'churn';
 
 interface AlertGroup {
   title: string;
@@ -41,11 +37,10 @@ const daysLabel = (member: Member) => {
 
 export const GymPassAlertScreen: React.FC<GymPassAlertScreenProps> = ({
   members,
-  onSendWhatsApp,
-  onSendEmail,
-  onOpenRenew,
-  onSendTestAutomation,
+  onRunAutonomous,
 }) => {
+  const [runningGroup, setRunningGroup] = useState<AlertKind | null>(null);
+
   const expiring = members
     .filter((m) => m.status === 'expiring')
     .sort((a, b) => (a.daysRemaining ?? 99) - (b.daysRemaining ?? 99));
@@ -84,6 +79,47 @@ export const GymPassAlertScreen: React.FC<GymPassAlertScreenProps> = ({
 
   const totalAlerts = expiring.length + expired.length + atRisk.length;
 
+  const runAutonomous = async (group: AlertGroup) => {
+    if (runningGroup != null || group.members.length === 0) return;
+    setRunningGroup(group.kind);
+    try {
+      await onRunAutonomous(group.kind, group.members);
+    } finally {
+      setRunningGroup(null);
+    }
+  };
+
+  const actionButton = (group: AlertGroup, label: string) => (
+    <button
+      type="button"
+      onClick={() => runAutonomous(group)}
+      disabled={runningGroup != null || group.members.length === 0}
+      className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-2xl border font-mono transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs ${
+        group.members.length === 0
+          ? 'bg-white border-[#e2e8f0] text-slate-300'
+          : group.kind === 'expiry'
+            ? 'bg-[#fffbeb] border-[#fde68a] text-[#b45309] hover:bg-[#fef3c7]'
+            : group.kind === 'overdue'
+              ? 'bg-[#fff1f1] border-[#ffd6d1] text-[#b91c1c] hover:bg-[#fee2e2]'
+              : 'bg-[#f5f3ff] border-[#ddd6fe] text-[#6d28d9] hover:bg-[#ede9fe]'
+      }`}
+    >
+      <span className="flex items-center gap-1.5">
+        {runningGroup === group.kind ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : (
+          <Zap className="w-3.5 h-3.5" />
+        )}
+        <span className="text-[10px] font-bold">{label}</span>
+      </span>
+      <span className="text-[9px] font-semibold opacity-70">
+        {group.members.length > 0
+          ? `Send to all · ${group.members.length}`
+          : 'No one here'}
+      </span>
+    </button>
+  );
+
   return (
     <div className="space-y-4 pb-24 animate-in fade-in duration-200">
       {/* Header */}
@@ -98,38 +134,17 @@ export const GymPassAlertScreen: React.FC<GymPassAlertScreenProps> = ({
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
-          {onSendTestAutomation && (
-            <button
-              type="button"
-              onClick={onSendTestAutomation}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#e0f2fe] border border-[#bae6fd] text-[#006194] text-[11px] font-mono font-bold shadow-xs hover:bg-[#bae6fd] transition-all"
-              title="Creates a dummy athlete and sends a real-time WhatsApp renewal message"
-            >
-              <FlaskConical className="w-3.5 h-3.5" />
-              Test Automation
-            </button>
-          )}
-          <span className="px-3 py-1.5 rounded-full bg-[#fff5f5] border border-[#ffd6d1] text-[#b91c1c] text-xs font-mono font-bold shadow-xs">
-            {totalAlerts} Alerts
-          </span>
-        </div>
+        <span className="px-3 py-1.5 rounded-full bg-[#fff5f5] border border-[#ffd6d1] text-[#b91c1c] text-xs font-mono font-bold shadow-xs">
+          {totalAlerts} Alerts
+        </span>
       </div>
 
-      {/* Master action strip */}
+      {/* Autonomous actions — one tap sends a message to everyone in the group */}
       {totalAlerts > 0 && (
-        <div className="p-3 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#fff5f5] text-[#b91c1c] flex items-center justify-center shrink-0">
-            <BellRing className="w-5 h-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-mono text-slate-500">
-              {expiring.length} passes expiring in the next 7 days
-            </p>
-            <p className="text-[11px] font-mono text-slate-400">
-              Reminders land on the member&apos;s registered WhatsApp + email
-            </p>
-          </div>
+        <div className="grid grid-cols-3 gap-2">
+          {actionButton(groups[0], 'RENEW NUDGE')}
+          {actionButton(groups[1], 'FOLLOW-UP')}
+          {actionButton(groups[2], 'WIN-BACK')}
         </div>
       )}
 
@@ -156,15 +171,21 @@ export const GymPassAlertScreen: React.FC<GymPassAlertScreenProps> = ({
             {group.members.map((member) => (
               <div
                 key={member.id}
-                className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs space-y-3 hover:border-[#bae6fd] transition-all"
+                className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs hover:border-[#bae6fd] transition-all"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    <img
-                      src={member.avatar}
-                      alt={member.name}
-                      className="w-12 h-12 rounded-xl object-cover ring-1 ring-slate-200 shrink-0"
-                    />
+                    {member.avatar ? (
+                      <img
+                        src={member.avatar}
+                        alt={member.name}
+                        className="w-12 h-12 rounded-xl object-cover ring-1 ring-slate-200 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-[#e0f2fe] text-[#0284c7] font-display font-bold text-sm flex items-center justify-center ring-1 ring-slate-200 shrink-0">
+                        {member.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold font-display text-[#0b1c30] truncate">
                         {member.name}
@@ -186,7 +207,7 @@ export const GymPassAlertScreen: React.FC<GymPassAlertScreenProps> = ({
                 </div>
 
                 {/* Contact details */}
-                <div className="flex flex-col gap-1 text-[11px] font-mono text-slate-500">
+                <div className="flex flex-col gap-1 text-[11px] font-mono text-slate-500 mt-1">
                   <span className="flex items-center gap-1.5">
                     <Phone className="w-3 h-3 text-[#64748b] shrink-0" />
                     {member.phone}
@@ -195,35 +216,6 @@ export const GymPassAlertScreen: React.FC<GymPassAlertScreenProps> = ({
                     <Mail className="w-3 h-3 text-[#64748b] shrink-0" />
                     <span className="truncate">{member.email || 'No email on file'}</span>
                   </span>
-                </div>
-
-                {/* Action buttons */}
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => onSendWhatsApp(member, group.kind)}
-                    className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-[#22c55e] hover:bg-[#16a34a] text-white text-[10px] font-bold transition-all shadow-xs"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    WhatsApp
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!member.email}
-                    onClick={() => onSendEmail(member)}
-                    className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl border border-[#0284c7] text-[#006194] hover:bg-[#e0f2fe] text-[10px] font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    Email
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onOpenRenew(member)}
-                    className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-[#0b1c30] hover:bg-[#1e293b] text-white text-[10px] font-bold transition-all"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    Renew
-                  </button>
                 </div>
               </div>
             ))}

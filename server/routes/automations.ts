@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../db';
-import { whatsapp } from '../whatsapp';
+import { db } from '../db.js';
+import { whatsapp } from '../whatsapp.js';
 
 export const automationsRouter = Router();
 

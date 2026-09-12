@@ -1,4 +1,77 @@
-import { Member, BillingItem, BranchStat } from '../types';
+import { Member, BillingItem, BranchStat, Trainer } from '../types';
+
+// Mirrors the backend seed (GET /api/business/trainers) so the app
+// degrades gracefully when the server is offline.
+export const INITIAL_TRAINERS: Trainer[] = [
+  {
+    id: 'tr-1',
+    name: 'Arjun Khanna',
+    role: 'Head Coach · Strength & Conditioning',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    phone: '+91 98765 43210',
+    branch: 'Jatra Hotel',
+    status: 'in_session',
+    ptClientsCount: 14,
+    monthlySessionsCompleted: 58,
+    monthlyTarget: 80,
+    ptRevenue: 64500,
+    commissionRate: 20,
+    commissionEarned: 12900,
+    specialization: ['Powerlifting', 'CrossFit', 'Hypertrophy'],
+    shiftHours: '6:30 AM – 2:30 PM',
+  },
+  {
+    id: 'tr-2',
+    name: 'Meera Nair',
+    role: 'Senior Coach · Nutrition & Conditioning',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    phone: '+91 98100 22110',
+    branch: 'Jatra Hotel',
+    status: 'on_floor',
+    ptClientsCount: 11,
+    monthlySessionsCompleted: 44,
+    monthlyTarget: 70,
+    ptRevenue: 49750,
+    commissionRate: 18,
+    commissionEarned: 8955,
+    specialization: ['Fat loss', 'Rehab', 'Nutrition'],
+    shiftHours: '7:00 AM – 3:00 PM',
+  },
+  {
+    id: 'tr-3',
+    name: 'Farhan Ali',
+    role: 'Coach · Boxing & HIIT',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    phone: '+91 98665 44339',
+    branch: 'Adgaon',
+    status: 'break',
+    ptClientsCount: 8,
+    monthlySessionsCompleted: 32,
+    monthlyTarget: 60,
+    ptRevenue: 31800,
+    commissionRate: 15,
+    commissionEarned: 4770,
+    specialization: ['Boxing', 'HIIT', 'Mobility'],
+    shiftHours: '10:00 AM – 6:00 PM',
+  },
+  {
+    id: 'tr-4',
+    name: 'Ritu Malhotra',
+    role: 'Coach · Yoga & Recovery',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+    phone: '+91 98554 77881',
+    branch: 'Adgaon',
+    status: 'off_duty',
+    ptClientsCount: 6,
+    monthlySessionsCompleted: 27,
+    monthlyTarget: 50,
+    ptRevenue: 22100,
+    commissionRate: 15,
+    commissionEarned: 3315,
+    specialization: ['Yoga', 'Recovery', 'Pilates'],
+    shiftHours: '3:00 PM – 9:00 PM',
+  },
+];
 
 export const INITIAL_MEMBERS: Member[] = [
   {

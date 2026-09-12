@@ -1,4 +1,4 @@
-import { Member, BillingItem } from './types';
+import { Member, BillingItem, Trainer } from './types';
 
 // ---- branch mapping (frontend labels -> backend labels) ----
 export const toApiBranch = (branch: string): string | undefined =>
@@ -92,5 +92,49 @@ export async function apiGetOverview(branch?: string) {
 
 export async function apiGetBranchAnalytics() {
   const res = await request<{ success: boolean; data: any[] }>(`/api/analytics/branches`);
-  return { ...res, data: res.data.map((b) => ({ ...b, name: fromApiBranch(b.name) })) };
+  return { ...res, data: res.data.map((b) => ({ name: fromApiBranch(b.name), ...b })) };
+}
+
+// ---- Trainers ----
+export async function apiGetTrainers(): Promise<Trainer[]> {
+  const res = await request<{ success: boolean; data: any[] }>(`/api/business/trainers`);
+  return res.data.map((t) => ({
+    ...t,
+    id: String(t.id || t._id || ''),
+    status: (t.status || 'off_duty') as Trainer['status'],
+  }));
+}
+
+export async function apiLogTrainerSession(trainerId: string): Promise<Trainer> {
+  const res = await request<{ success: boolean; data: any }>(`/api/business/trainers/${trainerId}/session`, {
+    method: 'POST',
+  });
+  return res.data;
+}
+
+export async function apiToggleTrainerStatus(trainerId: string, status: Trainer['status']): Promise<Trainer> {
+  const res = await request<{ success: boolean; data: any }>(`/api/business/trainers/${trainerId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+  return res.data;
+}
+
+export interface ManualDispatchPayload {
+  athleteId?: string;
+  athleteName: string;
+  phone: string;
+  plan?: string;
+  amount?: number;
+  message?: string;
+  triggerType?: string;
+  triggerLabel?: string;
+  daysRemaining?: number;
+}
+
+export async function apiDispatchManual(payload: ManualDispatchPayload) {
+  return request<{ success: boolean; mode: string; message: string }>(`/api/automations/dispatch`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }

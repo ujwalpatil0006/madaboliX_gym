@@ -1,27 +1,25 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
-import { Building2, ChevronDown, User, Check, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react';
+import { Building2, ChevronDown, Check } from 'lucide-react';
 import { BranchLocation } from '../types';
 
 interface HeaderProps {
   currentBranch: BranchLocation;
   onSelectBranch: (branch: BranchLocation) => void;
-  onOpenOwnerProfile?: () => void;
   syncActive?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentBranch,
   onSelectBranch,
-  onOpenOwnerProfile,
   syncActive = true,
 }) => {
   const [showBranchMenu, setShowBranchMenu] = useState(false);
 
-  const branches: { name: BranchLocation; label: string; code: string; activeCount: number }[] = [
-    { name: 'Jatra Hotel', label: 'Jatra Hotel', code: 'JATRA', activeCount: 112 },
-    { name: 'Adgaon', label: 'Adgaon', code: 'ADGAON', activeCount: 72 },
-    { name: 'All Locations', label: 'All Branches', code: 'ALL', activeCount: 184 },
+  const branches: { name: BranchLocation; label: string }[] = [
+    { name: 'Jatra Hotel', label: 'Jatra Hotel' },
+    { name: 'Adgaon', label: 'Adgaon' },
+    { name: 'All Locations', label: 'All Branches' },
   ];
 
   const currentLabel = branches.find((b) => b.name === currentBranch)?.label ?? currentBranch;
@@ -58,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0284c7]"></span>
               </span>
               <span className="text-[9px] font-mono font-bold tracking-tight text-[#006194]">
-                SYNC ACTIVE
+                LIVE
               </span>
             </div>
           </button>
@@ -75,9 +73,6 @@ export const Header: React.FC<HeaderProps> = ({
                   <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
                     Studio Locations
                   </span>
-                  <span className="text-[10px] font-mono text-[#0284c7] font-semibold">
-                    Live Telemetry
-                  </span>
                 </div>
                 {branches.map((b) => (
                   <button
@@ -92,12 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
                         : 'hover:bg-slate-50 text-slate-700'
                     }`}
                   >
-                    <div className="flex flex-col">
-                      <span className="text-xs font-display">{b.label}</span>
-                      <span className="text-[10px] font-mono text-slate-400">
-                        {b.activeCount} Active Athletes • 100% Sync
-                      </span>
-                    </div>
+                    <span className="text-xs font-display">{b.label}</span>
                     {currentBranch === b.name && (
                       <Check className="w-4 h-4 text-[#0284c7]" />
                     )}
@@ -107,16 +97,6 @@ export const Header: React.FC<HeaderProps> = ({
             </>
           )}
         </div>
-
-        {/* Right: User Profile Icon */}
-        <button
-          type="button"
-          onClick={onOpenOwnerProfile}
-          className="w-10 h-10 rounded-full bg-[#0284c7] text-white flex items-center justify-center shadow-sm hover:bg-[#0369a1] active:scale-95 transition-all shrink-0"
-          title="Owner Executive Profile"
-        >
-          <User className="w-5 h-5" />
-        </button>
       </div>
     </header>
   );

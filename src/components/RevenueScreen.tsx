@@ -4,11 +4,11 @@ import {
   Building2,
   BarChart3,
   CalendarRange,
-  Share2,
 } from 'lucide-react';
+import { BranchLocation } from '../types';
 
 interface RevenueScreenProps {
-  onOpenExecutiveSnapshot: () => void;
+  currentBranch: BranchLocation;
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
@@ -32,32 +32,27 @@ const BRANCH_DATA: Record<string, { monthly: number[]; yearly: Record<string, nu
   },
 };
 
-const TOTAL_MONTHLY: number[] = BRANCH_DATA['Jatra Hotel'].monthly.map(
-  (v, i) => v + BRANCH_DATA['Adgaon'].monthly[i]
-);
-const TOTAL_YEARLY: Record<string, number> = {
-  '2023': BRANCH_DATA['Jatra Hotel'].yearly['2023'] + BRANCH_DATA['Adgaon'].yearly['2023'],
-  '2024': BRANCH_DATA['Jatra Hotel'].yearly['2024'] + BRANCH_DATA['Adgaon'].yearly['2024'],
-  '2025': BRANCH_DATA['Jatra Hotel'].yearly['2025'] + BRANCH_DATA['Adgaon'].yearly['2025'],
-};
-
 const formatShort = (value: number) =>
   value >= 100000 ? `₹${(value / 100000).toFixed(1)}L` : `₹${(value / 1000).toFixed(0)}k`;
 
 const pctChange = (current: number, previous: number) =>
   previous > 0 ? ((current - previous) / previous) * 100 : 0;
 
-export const RevenueScreen: React.FC<RevenueScreenProps> = ({ onOpenExecutiveSnapshot }) => {
+export const RevenueScreen: React.FC<RevenueScreenProps> = ({ currentBranch }) => {
   const [chartMode, setChartMode] = useState<'Monthly' | 'Yearly'>('Monthly');
 
-  const branchThisMonth = BRANCHES.map(
+  const activeBranches = BRANCHES.filter(
+    (b) => currentBranch === 'All Locations' || b.name === currentBranch
+  );
+
+  const branchThisMonth = activeBranches.map(
     (b) => BRANCH_DATA[b.name].monthly[CURRENT_MONTH_INDEX]
   );
-  const branchLastMonth = BRANCHES.map(
+  const branchLastMonth = activeBranches.map(
     (b) => BRANCH_DATA[b.name].monthly[CURRENT_MONTH_INDEX - 1]
   );
-  const branchThisYear = BRANCHES.map((b) => BRANCH_DATA[b.name].yearly[CURRENT_YEAR]);
-  const branchLastYear = BRANCHES.map(
+  const branchThisYear = activeBranches.map((b) => BRANCH_DATA[b.name].yearly[CURRENT_YEAR]);
+  const branchLastYear = activeBranches.map(
     (b) => BRANCH_DATA[b.name].yearly[String(Number(CURRENT_YEAR) - 1)]
   );
 
@@ -67,7 +62,14 @@ export const RevenueScreen: React.FC<RevenueScreenProps> = ({ onOpenExecutiveSna
   const portfolioLastYear = branchLastYear.reduce((a, b) => a + b, 0);
 
   const chartLabels = chartMode === 'Monthly' ? MONTHS : YEARS;
-  const chartSeries = chartMode === 'Monthly' ? TOTAL_MONTHLY : YEARS.map((y) => TOTAL_YEARLY[y]);
+  const chartSeries =
+    chartMode === 'Monthly'
+      ? MONTHS.map((_, i) =>
+          activeBranches.reduce((sum, b) => sum + BRANCH_DATA[b.name].monthly[i], 0)
+        )
+      : YEARS.map((y) =>
+          activeBranches.reduce((sum, b) => sum + BRANCH_DATA[b.name].yearly[y], 0)
+        );
   const chartMax = Math.max(...chartSeries);
   const chartPeak = Math.max(...chartSeries);
 
@@ -81,25 +83,14 @@ export const RevenueScreen: React.FC<RevenueScreenProps> = ({ onOpenExecutiveSna
   return (
     <div className="space-y-4 pb-24 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-[#0284c7]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7] animate-pulse" />
-            REVENUE INSIGHTS
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-display text-[#0b1c30] tracking-tight mt-0.5">
-            Revenue Console
-          </h1>
+      <div>
+        <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-[#0284c7]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7] animate-pulse" />
+          REVENUE INSIGHTS
         </div>
-
-        <button
-          type="button"
-          onClick={onOpenExecutiveSnapshot}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white border border-[#e2e8f0] text-[11px] font-mono font-semibold text-[#006194] hover:border-[#0284c7] transition-all shadow-xs"
-        >
-          <Share2 className="w-3.5 h-3.5 text-[#0284c7]" />
-          Daily Snapshot
-        </button>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display text-[#0b1c30] tracking-tight mt-0.5">
+          Revenue Console
+        </h1>
       </div>
 
       {/* Portfolio KPI Grid */}
@@ -123,8 +114,8 @@ export const RevenueScreen: React.FC<RevenueScreenProps> = ({ onOpenExecutiveSna
         ))}
       </div>
 
-      {/* Branch Breakdown Cards */}
-      {BRANCHES.map((branch, idx) => {
+      {/* Branch Breakdown Cards — one per selected branch, never combined */}
+      {activeBranches.map((branch) => {
         const monthly = BRANCH_DATA[branch.name].monthly;
         const yearly = BRANCH_DATA[branch.name].yearly;
         const thisMonth = monthly[CURRENT_MONTH_INDEX];
@@ -144,19 +135,10 @@ export const RevenueScreen: React.FC<RevenueScreenProps> = ({ onOpenExecutiveSna
                 >
                   <Building2 className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold font-display text-[#0b1c30]">
-                    {branch.name}
-                  </h3>
-                  <p className="text-[10px] font-mono text-[#64748b]">
-                    {branch.name === 'Jatra Hotel' ? 'Flagship Facility' : 'Growth Facility'}
-                  </p>
-                </div>
+                <h3 className="text-sm font-bold font-display text-[#0b1c30]">
+                  {branch.name}
+                </h3>
               </div>
-
-              <span className="px-2 py-0.5 rounded-md bg-[#eff6ff] text-[#006194] text-[10px] font-mono font-bold border border-[#bae6fd]">
-                {idx === 0 ? 'L1 LEADER' : 'L2 STEADY'}
-              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
@@ -205,7 +187,7 @@ export const RevenueScreen: React.FC<RevenueScreenProps> = ({ onOpenExecutiveSna
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#0284c7]">
             <BarChart3 className="w-3.5 h-3.5" />
-            INCOME TREND
+            REVENUE TREND
           </div>
 
           <div className="flex items-center gap-1 bg-[#f1f5f9] p-0.5 rounded-full">
@@ -283,7 +265,7 @@ export const RevenueScreen: React.FC<RevenueScreenProps> = ({ onOpenExecutiveSna
             {chartMode === 'Monthly' ? 'Jan – Oct 2025' : '2023 – 2025'}
           </span>
           <span className="text-[#006194] font-semibold">
-            Peak {formatShort(chartPeak)} • All branches
+            Peak {formatShort(chartPeak)} • {currentBranch === 'All Locations' ? 'All branches' : currentBranch}
           </span>
         </div>
       </div>

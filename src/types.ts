@@ -1,4 +1,4 @@
-export type NavigationTab = 'dashboard' | 'members' | 'billing' | 'reports' | 'alerts';
+export type NavigationTab = 'dashboard' | 'members' | 'trainers' | 'billing' | 'reports' | 'alerts';
 
 export type BranchLocation = 'Jatra Hotel' | 'Adgaon' | 'All Locations';
 
@@ -58,4 +58,38 @@ export interface BranchStat {
   floorCapacity: number;
   statusBand: string;
   sharePercent: number;
+}
+
+// ---- Trainers (mirrors server GymTrainer) ----
+export type TrainerStatus = 'on_floor' | 'in_session' | 'break' | 'off_duty';
+
+export interface Trainer {
+  id: string;
+  name: string;
+  role: string;
+  avatar?: string;
+  initials?: string;
+  phone: string;
+  branch?: string; // backend model has no branch; local seed may set it
+  status: TrainerStatus;
+  ptClientsCount: number;
+  monthlySessionsCompleted: number;
+  monthlyTarget: number;
+  ptRevenue: number;
+  commissionRate: number;
+  commissionEarned: number;
+  specialization: string[];
+  shiftHours: string;
+}
+
+export type TrainerPunchType = 'in' | 'out';
+
+export interface TrainerAttendance {
+  id: string;
+  trainerId: string;
+  trainerName: string;
+  type: TrainerPunchType;
+  branch: BranchLocation;
+  at: string; // ISO timestamp
+  via: 'gate-qr';
 }

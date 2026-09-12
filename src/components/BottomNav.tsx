@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutGrid, Users, CreditCard, BarChart3, BellRing } from 'lucide-react';
+import { LayoutGrid, Users, Dumbbell, CreditCard, BarChart3, BellRing } from 'lucide-react';
 import { NavigationTab } from '../types';
 
 interface BottomNavProps {
@@ -7,6 +7,7 @@ interface BottomNavProps {
   onTabChange: (tab: NavigationTab) => void;
   badgeCounts?: {
     members?: number;
+    trainers?: number;
     billing?: number;
     reports?: number;
     alerts?: number;
@@ -31,8 +32,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       badge: badgeCounts?.members,
     },
     {
+      id: 'trainers',
+      label: 'Trainers',
+      icon: <Dumbbell className="w-5 h-5" />,
+      badge: badgeCounts?.trainers,
+    },
+    {
       id: 'alerts',
-      label: 'Pass Alert',
+      label: 'Alerts',
       icon: <BellRing className="w-5 h-5" />,
       badge: badgeCounts?.alerts,
     },

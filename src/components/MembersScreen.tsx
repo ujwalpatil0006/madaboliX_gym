@@ -2,18 +2,14 @@ import React, { useState, useMemo } from 'react';
 import {
   Search,
   QrCode,
-  SlidersHorizontal,
   CheckCircle,
   Activity,
   UserPlus,
-  MoreVertical,
   RefreshCw,
-  Lock,
   Calendar,
   AlertCircle,
   Clock,
   Check,
-  ChevronDown
 } from 'lucide-react';
 import { Member, BranchLocation } from '../types';
 
@@ -25,6 +21,7 @@ interface MembersScreenProps {
   onToggleCheckIn: (memberId: string) => void;
   onOpenMemberTelemetry: (member: Member) => void;
   onOpenMemberProfile: (member: Member) => void;
+  onOpenRenewModal: (member: Member) => void;
 }
 
 export const MembersScreen: React.FC<MembersScreenProps> = ({
@@ -35,11 +32,10 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
   onToggleCheckIn,
   onOpenMemberTelemetry,
   onOpenMemberProfile,
+  onOpenRenewModal,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expiring' | 'expired'>('all');
-  const [sortBy, setSortBy] = useState<'recency' | 'name' | 'plan' | 'amount'>('recency');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
 
   // Filtered members list
   const filteredMembers = useMemo(() => {
@@ -170,73 +166,33 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
         </button>
       </div>
 
-      {/* Directory Subheader & Sorting */}
-      <div className="flex items-center justify-between pt-1">
+      {/* Directory Subheader */}
+      <div className="pt-1">
         <div className="text-[10px] font-mono font-semibold tracking-wider text-[#64748b] uppercase">
-          DIRECTORY <span className="text-slate-300">•</span> <span className="text-[#0284c7]">REALTIME TELEMETRY</span>
-        </div>
-
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setShowSortDropdown(!showSortDropdown)}
-            className="flex items-center gap-1 text-xs font-mono font-semibold text-[#64748b] hover:text-[#0b1c30] transition-colors"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
-            <span>By Recency</span>
-            <ChevronDown className="w-3 h-3" />
-          </button>
-
-          {showSortDropdown && (
-            <>
-              <div
-                className="fixed inset-0 z-30"
-                onClick={() => setShowSortDropdown(false)}
-              />
-              <div className="absolute right-0 top-full mt-1.5 z-40 w-40 p-1.5 bg-white rounded-xl border border-[#e2e8f0] shadow-lg text-xs">
-                {['recency', 'name', 'plan', 'amount'].map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => {
-                      setSortBy(opt as any);
-                      setShowSortDropdown(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg capitalize ${
-                      sortBy === opt ? 'bg-[#f0f9ff] text-[#0284c7] font-semibold' : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    By {opt}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          DIRECTORY <span className="text-slate-300">•</span> <span className="text-[#0284c7]">LIVE</span>
         </div>
       </div>
 
       {/* Member Cards List */}
       <div className="space-y-3">
-        {filteredMembers.slice(0, 5).map((member) => {
-          // Card borders and badges based on status matching Screenshot 2
-          const isRohit = member.id === 'mem-1';
-          const isPooja = member.id === 'mem-2';
-          const isKabir = member.id === 'mem-3';
-          const isSimran = member.id === 'mem-4';
+        {filteredMembers.map((member) => {
+          // Card styling derived from member status (works for any member)
+          const isActive = member.status === 'active';
+          const isExpiring = member.status === 'expiring';
+          const isExpired = member.status === 'expired';
 
           return (
             <div
               key={member.id}
               onClick={() => onOpenMemberProfile(member)}
               className={`p-4 rounded-2xl bg-white border shadow-xs transition-all cursor-pointer active:scale-[0.99] ${
-                isRohit
+                isActive
                   ? 'border-l-4 border-l-[#22c55e] border-[#e2e8f0]'
-                  : isPooja
+                  : isExpiring
                   ? 'border-l-4 border-l-[#f59e0b] border-[#e2e8f0]'
-                  : isKabir
-                  ? 'border-l-4 border-l-[#0284c7] border-[#e2e8f0]'
-                  : isSimran
+                  : isExpired
                   ? 'border-l-4 border-l-[#ef4444] border-[#e2e8f0]'
-                  : 'border-[#e2e8f0]'
+                  : 'border-l-4 border-l-[#0284c7] border-[#e2e8f0]'
               }`}
             >
               {/* Member Profile Header */}
@@ -279,7 +235,7 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                       )}
                     </div>
                     <p className="text-xs text-[#64748b] truncate mt-0.5">
-                      {member.plan} • {member.branch.split(' ')[0]}...
+                      {member.plan} • {member.branch}
                     </p>
                   </div>
                 </div>
@@ -307,21 +263,37 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                 </div>
               </div>
 
-              {/* Telemetry Status Box */}
+              {/* Telemetry Status Box (derived from member data) */}
               <div className="mt-3">
-                {isRohit && (
+                {isActive && member.isCheckedIn && (
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f0fdf4] border border-[#bbf7d0] text-xs">
                     <div className="flex items-center gap-1.5 text-[#15803d] font-mono">
                       <span>➔</span>
-                      <span>Last in: <strong className="font-semibold">Today, 7:15 AM</strong></span>
+                      <span>Last in: <strong className="font-semibold">{member.lastActive}</strong></span>
                     </div>
-                    <span className="px-2 py-0.5 rounded-md bg-white text-[#0284c7] font-mono font-semibold text-[11px] border border-[#bae6fd]">
-                      {member.locker}
-                    </span>
+                    {member.locker && (
+                      <span className="px-2 py-0.5 rounded-md bg-white text-[#0284c7] font-mono font-semibold text-[11px] border border-[#bae6fd]">
+                        {member.locker}
+                      </span>
+                    )}
                   </div>
                 )}
 
-                {isPooja && (
+                {isActive && !member.isCheckedIn && (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f0f9ff] border border-[#bae6fd] text-xs">
+                    <div className="flex items-center gap-1.5 text-[#006194] font-mono">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Last active: <strong className="font-semibold">{member.lastActive}</strong></span>
+                    </div>
+                    {member.targetFrequency && (
+                      <span className="text-[#0284c7] font-mono text-[11px]">
+                        Target: {member.targetFrequency}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {isExpiring && (
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-xs">
                     <div className="flex items-center gap-1.5 text-[#92400e]">
                       <Calendar className="w-3.5 h-3.5" />
@@ -333,23 +305,11 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                   </div>
                 )}
 
-                {isKabir && (
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f0f9ff] border border-[#bae6fd] text-xs">
-                    <div className="flex items-center gap-1.5 text-[#006194] font-mono">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>Last active: <strong className="font-semibold">4 days ago</strong></span>
-                    </div>
-                    <span className="text-[#0284c7] font-mono text-[11px]">
-                      Target: {member.targetFrequency}
-                    </span>
-                  </div>
-                )}
-
-                {isSimran && (
+                {isExpired && (
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#fff5f5] border border-[#ffdad6] text-xs">
                     <div className="flex items-center gap-1.5 text-[#b91c1c]">
                       <AlertCircle className="w-3.5 h-3.5" />
-                      <span>Lapsed 2d • Overdue</span>
+                      <span>Lapsed {member.overdueDays ? `${member.overdueDays}d` : ''} • Overdue</span>
                     </div>
                     <span className="font-mono font-bold text-sm text-[#b91c1c]">
                       ₹{member.amountDue?.toLocaleString()}
@@ -358,9 +318,9 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                 )}
               </div>
 
-              {/* Action Buttons Row */}
+              {/* Action Buttons Row (derived from member status) */}
               <div className="mt-3 flex items-center gap-2">
-                {isRohit && (
+                {isActive && (
                   <>
                     <button
                       type="button"
@@ -368,10 +328,18 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                         e.stopPropagation();
                         onToggleCheckIn(member.id);
                       }}
-                      className="flex-1 py-2 px-3 rounded-xl bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0] hover:bg-[#dcfce7] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
+                      className={`flex-1 py-2 px-3 rounded-xl border font-semibold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                        member.isCheckedIn
+                          ? 'bg-[#f0fdf4] text-[#15803d] border-[#bbf7d0] hover:bg-[#dcfce7]'
+                          : 'bg-[#f0f9ff] text-[#0284c7] border-[#bae6fd] hover:bg-[#e0f2fe]'
+                      }`}
                     >
-                      <Check className="w-4 h-4 text-[#15803d]" />
-                      <span>Checked In ✓</span>
+                      {member.isCheckedIn ? (
+                        <Check className="w-4 h-4 text-[#15803d]" />
+                      ) : (
+                        <UserPlus className="w-3.5 h-3.5" />
+                      )}
+                      <span>{member.isCheckedIn ? 'Checked In ✓' : 'Quick Check-in'}</span>
                     </button>
                     <button
                       type="button"
@@ -387,18 +355,18 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                   </>
                 )}
 
-                {isKabir && (
+                {!isActive && (
                   <>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleCheckIn(member.id);
+                        onOpenRenewModal(member);
                       }}
-                      className="flex-1 py-2 px-3 rounded-xl bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] hover:bg-[#e0f2fe] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
+                      className="flex-1 py-2 px-3 rounded-xl bg-[#004d6a] text-white hover:bg-[#00384d] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
                     >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>Quick Check-in</span>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>{isExpiring ? 'Renew Now' : 'Collect & Renew'}</span>
                     </button>
                     <button
                       type="button"
@@ -407,8 +375,9 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                         onOpenMemberTelemetry(member);
                       }}
                       className="p-2 rounded-xl bg-[#f8fafc] border border-slate-200 text-slate-500 hover:text-[#0284c7] hover:border-[#bae6fd] transition-all shrink-0"
+                      title="Telemetry Trends"
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <Activity className="w-4 h-4" />
                     </button>
                   </>
                 )}
@@ -416,14 +385,6 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
             </div>
           );
         })}
-      </div>
-
-      {/* Sync Footer Status */}
-      <div className="pt-2 text-center">
-        <p className="text-[11px] font-mono text-[#64748b] flex items-center justify-center gap-1.5">
-          <RefreshCw className="w-3 h-3 text-[#0284c7] animate-spin" />
-          <span>{filteredMembers.length} of {counts.all} profiles loaded • Pull to synchronize</span>
-        </p>
       </div>
 
       {/* Floating Action Button: + New Member */}

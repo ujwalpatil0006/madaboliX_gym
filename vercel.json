@@ -1,0 +1,6 @@
+{
+  "framework": "vite",
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.ts" }
+  ]
+}

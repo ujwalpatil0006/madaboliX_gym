@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   CreditCard,
-  Zap,
   Calendar,
   AlertTriangle,
   Send,
@@ -51,12 +50,16 @@ export const BillingScreen: React.FC<BillingScreenProps> = ({
 
   const pendingItems = billingItems.filter((i) => i.dueType !== 'paid');
   const totalToCollect = pendingItems.reduce((a, i) => a + i.amount, 0);
+  const overdueTotal = pendingItems
+    .filter((i) => i.dueType === 'overdue')
+    .reduce((a, i) => a + i.amount, 0);
+  const overduePct = totalToCollect > 0 ? Math.round((overdueTotal / totalToCollect) * 100) : 0;
 
   const tabItems = (tab: Tab) =>
     tab === '7days'
       ? billingItems.filter((i) => i.dueType === 'tomorrow' || i.dueType === 'overdue')
       : tab === '30days'
-        ? billingItems
+        ? billingItems.filter((i) => i.dueType !== 'paid')
         : billingItems.filter((i) => i.dueType === 'paid');
 
   const shown = tabItems(filterTab);
@@ -68,7 +71,7 @@ export const BillingScreen: React.FC<BillingScreenProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#0284c7]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7] animate-pulse" />
-            LIVE TELEMETRY <span className="text-slate-300">•</span> CYCLE CLOSE
+            BILLING DUE
           </div>
           <span className="px-2.5 py-0.5 rounded-full bg-[#eff6ff] text-[#006194] text-[10px] font-mono font-semibold border border-[#bae6fd]">
             {pendingItems.length} Pending
@@ -92,38 +95,21 @@ export const BillingScreen: React.FC<BillingScreenProps> = ({
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between text-xs">
             <span className="text-[11px] font-mono font-semibold text-[#0b1c30]">
-              Collection Velocity
+              Pipeline Health
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-[#eff6ff] text-[#0284c7] font-mono font-bold text-[11px] border border-[#bae6fd]">
-              89.2% Paid-Up
+            <span className={`px-2 py-0.5 rounded-md font-mono font-bold text-[11px] border ${
+              overdueTotal > 0
+                ? 'bg-[#fff5f5] text-[#ba1a1a] border-[#ffd6d1]'
+                : 'bg-[#eff6ff] text-[#0284c7] border-[#bae6fd]'
+            }`}>
+              {overduePct}% Overdue
             </span>
           </div>
           <div className="w-full h-2 rounded-full bg-[#eff4ff] overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-[#38bdf8] to-[#0284c7] rounded-full w-[89.2%]" />
-          </div>
-          <p className="text-[10px] text-[#64748b]">
-            89.2% of expected revenue collected this cycle
+            <div className="h-full bg-[#ba1a1a] rounded-full" style={{ width: `${overduePct}%` }} />
+          </div>          <p className="text-[10px] text-[#64748b]">
+            ₹{overdueTotal.toLocaleString('en-IN')} overdue of ₹{totalToCollect.toLocaleString('en-IN')} expected
           </p>
-        </div>
-
-        <div className="p-3 rounded-xl bg-[#f8faff] border border-[#e2e8f0] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-white border border-[#bae6fd] text-[#0284c7] flex items-center justify-center shrink-0">
-              <CreditCard className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-[#64748b] font-semibold block">
-                SETTLEMENT SPLIT
-              </span>
-              <span className="text-xs font-bold font-display text-[#0b1c30]">
-                UPI 68% <span className="text-slate-300">•</span> Cash 32%
-              </span>
-            </div>
-          </div>
-          <div className="w-24 h-2 rounded-full bg-[#e2e8f0] overflow-hidden flex">
-            <div className="h-full bg-[#0284c7] w-[68%]" />
-            <div className="h-full bg-[#38bdf8] w-[32%]" />
-          </div>
         </div>
       </div>
 
@@ -175,14 +161,10 @@ export const BillingScreen: React.FC<BillingScreenProps> = ({
         </button>
       </div>
 
-      {/* Priority Action Queue Header */}
-      <div className="flex items-center justify-between pt-1">
+      {/* To Collect Header */}
+      <div className="pt-1">
         <span className="text-[10px] font-mono font-semibold tracking-wider text-[#64748b] uppercase">
-          PRIORITY ACTION QUEUE
-        </span>
-        <span className="text-xs font-mono font-semibold text-[#0284c7] flex items-center gap-1">
-          <Zap className="w-3.5 h-3.5" />
-          Quick Dispatch
+          TO COLLECT
         </span>
       </div>
 
@@ -307,7 +289,7 @@ export const BillingScreen: React.FC<BillingScreenProps> = ({
                 Record New Payment
               </div>
               <div className="text-[10px] font-mono text-[#7bd0ff]">
-                Cash • Dynamic QR • POS Card
+                Cash collection at front desk
               </div>
             </div>
           </div>
