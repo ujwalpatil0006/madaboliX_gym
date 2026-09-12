@@ -1,6 +1,6 @@
-export type NavigationTab = 'dashboard' | 'members' | 'billing' | 'reports';
+export type NavigationTab = 'dashboard' | 'members' | 'billing' | 'reports' | 'alerts';
 
-export type BranchLocation = 'Downtown Branch' | 'Westside Studio' | 'All Locations';
+export type BranchLocation = 'Jatra Hotel' | 'Adgaon' | 'All Locations';
 
 export interface Member {
   id: string;
@@ -17,6 +17,9 @@ export interface Member {
   locker?: string;
   amountDue?: number;
   phone: string;
+  email?: string;
+  address?: string;
+  membershipStartDate?: string;
   isCheckedIn?: boolean;
   targetFrequency?: string; // e.g. '3x/wk'
   ltv?: number;

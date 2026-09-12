@@ -2,19 +2,12 @@ import React, { useState } from 'react';
 import {
   Calendar,
   TrendingUp,
-  AlertTriangle,
   ChevronRight,
   UserPlus,
   Zap,
   QrCode,
   IndianRupee,
-  MessageSquare,
   RefreshCw,
-  Clock,
-  CheckCircle2,
-  Users,
-  Activity,
-  ArrowUpRight,
 } from 'lucide-react';
 import { Member, BranchLocation } from '../types';
 
@@ -25,9 +18,7 @@ interface DashboardScreenProps {
   onOpenRenewModal: (member?: Member) => void;
   onOpenQRTerminal: () => void;
   onOpenCollectFee: () => void;
-  onOpenWhatsAppNudge: (member: Member) => void;
   onViewAllMembers: () => void;
-  onViewChurnRisk: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
@@ -37,13 +28,9 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onOpenRenewModal,
   onOpenQRTerminal,
   onOpenCollectFee,
-  onOpenWhatsAppNudge,
   onViewAllMembers,
-  onViewChurnRisk,
 }) => {
   const [selectedDate, setSelectedDate] = useState('Today, Oct 24');
-  const [liveOccupancy, setLiveOccupancy] = useState(28);
-  const maxCapacity = 75;
 
   // Filter urgent attention members
   const needsAttentionMembers = members.filter(
@@ -125,118 +112,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             <div className="text-[11px] font-mono text-[#006194] font-semibold mt-0.5">
               ₹38,200 pipeline
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Urgent Warning Banner */}
-      <div
-        onClick={onViewChurnRisk}
-        className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-[#fff5f5] border border-[#ffdad6] shadow-xs hover:border-[#ba1a1a] transition-all cursor-pointer group"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-[#fee2e2] text-[#ba1a1a] flex items-center justify-center shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm font-bold font-display text-[#0b1c30]">
-                5 Members at Risk
-              </span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-[#ba1a1a] text-white">
-                URGENT
-              </span>
-            </div>
-            <p className="text-[11px] text-[#64748b] truncate mt-0.5">
-              No check-in &gt; 14 days • High churn prop...
-            </p>
-          </div>
-        </div>
-
-        <div className="w-7 h-7 rounded-full bg-white border border-[#ffdad6] flex items-center justify-center text-slate-400 group-hover:text-[#ba1a1a] group-hover:border-[#ba1a1a] transition-all shrink-0">
-          <ChevronRight className="w-4 h-4" />
-        </div>
-      </div>
-
-      {/* Live Floor Occupancy Card */}
-      <div className="p-4 rounded-2xl bg-white border border-[#e2e8f0] shadow-xs hover:border-[#bae6fd] transition-all space-y-3">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#0284c7]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7]" />
-            LIVE FLOOR OCCUPANCY
-          </div>
-          <span className="px-2 py-0.5 rounded-md bg-[#f0f9ff] text-[#006194] text-[10px] font-mono font-semibold border border-[#bae6fd]">
-            {currentBranch === 'Downtown Branch' ? 'Downtown Hub' : 'Westside Studio'}
-          </span>
-        </div>
-
-        {/* Occupancy Value & Status */}
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-bold font-display text-[#0b1c30]">
-                {liveOccupancy}
-              </span>
-              <span className="text-xs font-mono text-[#64748b]">
-                / {maxCapacity} max capacity
-              </span>
-            </div>
-            <div className="text-[11px] text-[#64748b] mt-0.5 font-sans">
-              37% peak volume • Optimal flow
-            </div>
-          </div>
-
-          <span className="px-2.5 py-1 rounded-full bg-[#f0f9ff] text-[#006194] text-xs font-mono font-semibold border border-[#bae6fd]">
-            Moderate
-          </span>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-full h-2 rounded-full bg-[#e2e8f0] overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-[#38bdf8] to-[#0284c7] rounded-full transition-all duration-500"
-            style={{ width: `${(liveOccupancy / maxCapacity) * 100}%` }}
-          />
-        </div>
-
-        {/* Recent Athlete Check-in */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {/* Overlapping circular avatars */}
-            <div className="flex -space-x-2 overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&auto=format&fit=crop&q=80"
-                alt="Aman Verma"
-                className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80"
-                alt="Athlete"
-                className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
-              />
-              <img
-                src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&auto=format&fit=crop&q=80"
-                alt="Athlete"
-                className="inline-block h-7 w-7 rounded-full ring-2 ring-white object-cover"
-              />
-            </div>
-            <div>
-              <span className="text-xs font-bold font-display text-[#0b1c30]">
-                Aman Verma
-              </span>
-              <p className="text-[10px] text-[#64748b]">
-                Quarterly Pro Plan
-              </p>
-            </div>
-          </div>
-
-          <div className="px-2 py-0.5 rounded-full bg-[#f0f9ff] text-[#0284c7] text-[10px] font-mono font-semibold flex items-center gap-1 border border-[#bae6fd]">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0284c7] opacity-75" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0284c7]" />
-            </span>
-            2m ago
           </div>
         </div>
       </div>
@@ -334,12 +209,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </div>
         </div>
 
-        {/* Downtown Hub Row */}
+        {/* Jatra Hotel Row */}
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 font-semibold text-[#0b1c30]">
               <span className="w-2 h-2 rounded-full bg-[#0284c7]" />
-              Downtown Hub
+              Jatra Hotel
             </span>
             <span className="font-mono font-semibold text-[#0b1c30]">
               ₹88,000 <span className="text-[#64748b] font-normal">(59%)</span>
@@ -350,12 +225,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </div>
         </div>
 
-        {/* Westside Studio Row */}
+        {/* Adgaon Row */}
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 font-semibold text-[#0b1c30]">
               <span className="w-2 h-2 rounded-full bg-[#38bdf8]" />
-              Westside Studio
+              Adgaon
             </span>
             <span className="font-mono font-semibold text-[#0b1c30]">
               ₹60,500 <span className="text-[#64748b] font-normal">(41%)</span>
@@ -457,16 +332,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => onOpenWhatsAppNudge(member)}
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0] hover:bg-[#dcfce7] font-semibold text-xs transition-all"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>WhatsApp Nudge</span>
-              </button>
-
+            <div className="pt-1">
               <button
                 type="button"
                 onClick={() => onOpenRenewModal(member)}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Zap, Check, IndianRupee, Send, Smartphone, CreditCard, Building } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Zap, Check, IndianRupee, Send, Smartphone } from 'lucide-react';
 import { Member } from '../../types';
 
 interface RenewModalProps {
@@ -9,28 +9,37 @@ interface RenewModalProps {
   onSuccess: (amount: number, duration: string) => void;
 }
 
+const DURATION_OPTIONS: { key: string; label: string }[] = [
+  { key: '1m', label: '+1 Month' },
+  { key: '3m', label: '+3 Months' },
+  { key: '6m', label: '+6 Months' },
+  { key: '12m', label: '+1 Year' },
+];
+
 export const RenewModal: React.FC<RenewModalProps> = ({
   isOpen,
   onClose,
   member,
   onSuccess,
 }) => {
-  const [duration, setDuration] = useState<'1m' | '3m' | '12m'>('1m');
-  const [paymentMode, setPaymentMode] = useState<'upi' | 'cash' | 'pos'>('upi');
+  const [duration, setDuration] = useState('1m');
+  const [paymentMode, setPaymentMode] = useState<'upi' | 'cash'>('upi');
+  const [amountInput, setAmountInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (isOpen) {
+      setAmountInput(member?.amountDue ? String(member.amountDue) : '');
+      setDuration('1m');
+      setPaymentMode('upi');
+    }
+  }, [isOpen, member]);
+
   if (!isOpen) return null;
 
-  const baseRates = {
-    '1m': member?.amountDue || 2500,
-    '3m': (member?.amountDue || 2500) * 2.7,
-    '12m': (member?.amountDue || 2500) * 9.5,
-  };
-
-  const total = Math.round(baseRates[duration]);
-  const baseBeforeGST = Math.round(total / 1.18);
-  const gstAmount = total - baseBeforeGST;
+  const base = Number(amountInput) || 0;
+  const total = base;
 
   const handleRenew = () => {
     setIsProcessing(true);
@@ -84,50 +93,43 @@ export const RenewModal: React.FC<RenewModalProps> = ({
           </div>
         ) : (
           <div className="space-y-4 mt-4">
+            {/* Manual Amount Entry */}
+            <div>
+              <label className="block text-xs font-mono font-semibold text-slate-600 mb-2">
+                RENEWAL AMOUNT (₹) *
+              </label>
+              <input
+                type="number"
+                required
+                min={0}
+                step={1}
+                value={amountInput}
+                onChange={(e) => setAmountInput(e.target.value)}
+                placeholder="e.g. 2500"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-base font-bold font-mono text-[#0b1c30] focus:outline-hidden focus:border-[#0284c7] focus:ring-2 focus:ring-[#bae6fd]"
+              />
+            </div>
+
             {/* Duration Selector */}
             <div>
               <label className="block text-xs font-mono font-semibold text-slate-600 mb-2">
                 SELECT EXTENSION DURATION
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDuration('1m')}
-                  className={`p-3 rounded-xl border text-center transition-all ${
-                    duration === '1m'
-                      ? 'border-[#0284c7] bg-[#f0f9ff] text-[#006194] font-bold shadow-xs'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="text-xs font-display">+1 Month</div>
-                  <div className="text-xs font-mono mt-0.5">₹{Math.round(baseRates['1m']).toLocaleString()}</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDuration('3m')}
-                  className={`p-3 rounded-xl border text-center transition-all ${
-                    duration === '3m'
-                      ? 'border-[#0284c7] bg-[#f0f9ff] text-[#006194] font-bold shadow-xs'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="text-xs font-display">+3 Months</div>
-                  <div className="text-xs font-mono mt-0.5">₹{Math.round(baseRates['3m']).toLocaleString()}</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDuration('12m')}
-                  className={`p-3 rounded-xl border text-center transition-all ${
-                    duration === '12m'
-                      ? 'border-[#0284c7] bg-[#f0f9ff] text-[#006194] font-bold shadow-xs'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="text-xs font-display">+1 Year</div>
-                  <div className="text-xs font-mono mt-0.5">₹{Math.round(baseRates['12m']).toLocaleString()}</div>
-                </button>
+              <div className="grid grid-cols-2 gap-2">
+                {DURATION_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setDuration(opt.key)}
+                    className={`p-3 rounded-xl border text-center transition-all ${
+                      duration === opt.key
+                        ? 'border-[#0284c7] bg-[#f0f9ff] text-[#006194] font-bold shadow-xs'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="text-xs font-display font-semibold">{opt.label}</div>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -136,7 +138,7 @@ export const RenewModal: React.FC<RenewModalProps> = ({
               <label className="block text-xs font-mono font-semibold text-slate-600 mb-2">
                 COLLECTION CHANNEL
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setPaymentMode('upi')}
@@ -148,19 +150,6 @@ export const RenewModal: React.FC<RenewModalProps> = ({
                 >
                   <Smartphone className="w-3.5 h-3.5" />
                   <span>UPI Link</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPaymentMode('pos')}
-                  className={`py-2 px-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                    paymentMode === 'pos'
-                      ? 'border-[#0284c7] bg-[#eff6ff] text-[#0284c7]'
-                      : 'border-slate-200 text-slate-600'
-                  }`}
-                >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>POS Card</span>
                 </button>
 
                 <button
@@ -178,20 +167,10 @@ export const RenewModal: React.FC<RenewModalProps> = ({
               </div>
             </div>
 
-            {/* GST Itemized Breakdown */}
-            <div className="p-3 rounded-2xl bg-[#f8fafc] border border-slate-200 space-y-1 text-xs">
-              <div className="flex justify-between text-slate-500">
-                <span>Base Membership Fee</span>
-                <span className="font-mono">₹{baseBeforeGST.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-slate-500">
-                <span>GST (18% SAC: 999723)</span>
-                <span className="font-mono">₹{gstAmount.toLocaleString()}</span>
-              </div>
-              <div className="pt-1.5 border-t border-slate-200 flex justify-between font-bold text-sm text-[#0b1c30]">
-                <span>Total Due Now</span>
-                <span className="font-mono text-[#0284c7]">₹{total.toLocaleString()}</span>
-              </div>
+            {/* Amount Summary */}
+            <div className="p-3 rounded-2xl bg-[#f8fafc] border border-slate-200 flex justify-between items-center text-sm">
+              <span className="font-medium text-slate-600">Total Due Now</span>
+              <span className="font-mono font-bold text-[#0284c7]">₹{total.toLocaleString()}</span>
             </div>
 
             <button

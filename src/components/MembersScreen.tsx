@@ -5,12 +5,9 @@ import {
   SlidersHorizontal,
   CheckCircle,
   Activity,
-  Zap,
-  MessageSquare,
   UserPlus,
   MoreVertical,
   RefreshCw,
-  Send,
   Lock,
   Calendar,
   AlertCircle,
@@ -24,22 +21,20 @@ interface MembersScreenProps {
   members: Member[];
   currentBranch: BranchLocation;
   onOpenAddMember: () => void;
-  onOpenRenewModal: (member: Member) => void;
   onOpenQRTerminal: () => void;
-  onOpenWhatsAppNudge: (member: Member) => void;
   onToggleCheckIn: (memberId: string) => void;
   onOpenMemberTelemetry: (member: Member) => void;
+  onOpenMemberProfile: (member: Member) => void;
 }
 
 export const MembersScreen: React.FC<MembersScreenProps> = ({
   members,
   currentBranch,
   onOpenAddMember,
-  onOpenRenewModal,
   onOpenQRTerminal,
-  onOpenWhatsAppNudge,
   onToggleCheckIn,
   onOpenMemberTelemetry,
+  onOpenMemberProfile,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expiring' | 'expired'>('all');
@@ -51,7 +46,7 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
     return members.filter((m) => {
       // Branch filter if not all locations
       if (currentBranch !== 'All Locations' && m.branch !== currentBranch) {
-        // keep some for richness or match branch
+        return false;
       }
 
       // Status filter
@@ -73,12 +68,16 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
     });
   }, [members, currentBranch, statusFilter, searchQuery]);
 
-  // Counts for pills
+  // Counts for pills (derived from the currently selected branch)
+  const branchMembers = useMemo(
+    () => (currentBranch === 'All Locations' ? members : members.filter((m) => m.branch === currentBranch)),
+    [members, currentBranch]
+  );
   const counts = {
-    all: 184,
-    active: 152,
-    expiring: 18,
-    expired: 14,
+    all: branchMembers.length,
+    active: branchMembers.filter((m) => m.status === 'active').length,
+    expiring: branchMembers.filter((m) => m.status === 'expiring').length,
+    expired: branchMembers.filter((m) => m.status === 'expired').length,
   };
 
   return (
@@ -227,7 +226,8 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
           return (
             <div
               key={member.id}
-              className={`p-4 rounded-2xl bg-white border shadow-xs transition-all ${
+              onClick={() => onOpenMemberProfile(member)}
+              className={`p-4 rounded-2xl bg-white border shadow-xs transition-all cursor-pointer active:scale-[0.99] ${
                 isRohit
                   ? 'border-l-4 border-l-[#22c55e] border-[#e2e8f0]'
                   : isPooja
@@ -364,7 +364,10 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                   <>
                     <button
                       type="button"
-                      onClick={() => onToggleCheckIn(member.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleCheckIn(member.id);
+                      }}
                       className="flex-1 py-2 px-3 rounded-xl bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0] hover:bg-[#dcfce7] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
                     >
                       <Check className="w-4 h-4 text-[#15803d]" />
@@ -372,7 +375,10 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onOpenMemberTelemetry(member)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenMemberTelemetry(member);
+                      }}
                       className="p-2 rounded-xl bg-[#f8fafc] border border-slate-200 text-slate-500 hover:text-[#0284c7] hover:border-[#bae6fd] transition-all shrink-0"
                       title="Telemetry Trends"
                     >
@@ -381,32 +387,14 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                   </>
                 )}
 
-                {isPooja && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onOpenRenewModal(member)}
-                      className="flex-1 py-2 px-3 rounded-xl bg-[#0284c7] text-white hover:bg-[#0369a1] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
-                    >
-                      <Zap className="w-3.5 h-3.5" />
-                      <span>⚡ Renew</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onOpenWhatsAppNudge(member)}
-                      className="flex-1 py-2 px-3 rounded-xl bg-[#16a34a] text-white hover:bg-[#15803d] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>WhatsApp</span>
-                    </button>
-                  </>
-                )}
-
                 {isKabir && (
                   <>
                     <button
                       type="button"
-                      onClick={() => onToggleCheckIn(member.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleCheckIn(member.id);
+                      }}
                       className="flex-1 py-2 px-3 rounded-xl bg-[#f0f9ff] text-[#0284c7] border border-[#bae6fd] hover:bg-[#e0f2fe] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
@@ -414,31 +402,13 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onOpenMemberTelemetry(member)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenMemberTelemetry(member);
+                      }}
                       className="p-2 rounded-xl bg-[#f8fafc] border border-slate-200 text-slate-500 hover:text-[#0284c7] hover:border-[#bae6fd] transition-all shrink-0"
                     >
                       <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-
-                {isSimran && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onOpenRenewModal(member)}
-                      className="flex-1 py-2 px-3 rounded-xl bg-[#0f172a] text-white hover:bg-black font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Renew (+1 Mo)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onOpenWhatsAppNudge(member)}
-                      className="flex-1 py-2 px-3 rounded-xl bg-[#16a34a] text-white hover:bg-[#15803d] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>WhatsApp Reminder</span>
                     </button>
                   </>
                 )}
@@ -452,7 +422,7 @@ export const MembersScreen: React.FC<MembersScreenProps> = ({
       <div className="pt-2 text-center">
         <p className="text-[11px] font-mono text-[#64748b] flex items-center justify-center gap-1.5">
           <RefreshCw className="w-3 h-3 text-[#0284c7] animate-spin" />
-          <span>4 of 184 profiles loaded • Pull to synchronize</span>
+          <span>{filteredMembers.length} of {counts.all} profiles loaded • Pull to synchronize</span>
         </p>
       </div>
 

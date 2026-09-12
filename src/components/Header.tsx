@@ -19,9 +19,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [showBranchMenu, setShowBranchMenu] = useState(false);
 
   const branches: { name: BranchLocation; label: string; code: string; activeCount: number }[] = [
-    { name: 'Downtown Branch', label: 'Downtown Hub (Flagship)', code: 'DOWNTOWN', activeCount: 112 },
-    { name: 'Westside Studio', label: 'Westside Branch (Growth Node)', code: 'WESTSIDE', activeCount: 72 },
+    { name: 'Jatra Hotel', label: 'Jatra Hotel', code: 'JATRA', activeCount: 112 },
+    { name: 'Adgaon', label: 'Adgaon', code: 'ADGAON', activeCount: 72 },
+    { name: 'All Locations', label: 'All Branches', code: 'ALL', activeCount: 184 },
   ];
+
+  const currentLabel = branches.find((b) => b.name === currentBranch)?.label ?? currentBranch;
 
   return (
     <header className="relative z-30 w-full px-4 pt-4 pb-2">
@@ -41,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-1.5 min-w-0">
               <Building2 className="w-3.5 h-3.5 text-[#0284c7] shrink-0" />
               <span className="text-xs font-semibold text-[#0b1c30] truncate font-display">
-                {currentBranch}
+                {currentLabel}
               </span>
               <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform shrink-0 ${showBranchMenu ? 'rotate-180' : ''}`} />
             </div>

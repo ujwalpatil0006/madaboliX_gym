@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutGrid, Users, CreditCard, Activity } from 'lucide-react';
+import { LayoutGrid, Users, CreditCard, BarChart3, BellRing } from 'lucide-react';
 import { NavigationTab } from '../types';
 
 interface BottomNavProps {
@@ -9,6 +9,7 @@ interface BottomNavProps {
     members?: number;
     billing?: number;
     reports?: number;
+    alerts?: number;
   };
 }
 
@@ -30,6 +31,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       badge: badgeCounts?.members,
     },
     {
+      id: 'alerts',
+      label: 'Pass Alert',
+      icon: <BellRing className="w-5 h-5" />,
+      badge: badgeCounts?.alerts,
+    },
+    {
       id: 'billing',
       label: 'Billing',
       icon: <CreditCard className="w-5 h-5" />,
@@ -37,8 +44,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     },
     {
       id: 'reports',
-      label: 'Reports',
-      icon: <Activity className="w-5 h-5" />,
+      label: 'Revenue',
+      icon: <BarChart3 className="w-5 h-5" />,
       badge: badgeCounts?.reports,
     },
   ];

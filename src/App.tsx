@@ -4,16 +4,17 @@ import { BottomNav } from './components/BottomNav';
 import { DashboardScreen } from './components/DashboardScreen';
 import { MembersScreen } from './components/MembersScreen';
 import { BillingScreen } from './components/BillingScreen';
-import { ReportsScreen } from './components/ReportsScreen';
+import { RevenueScreen } from './components/RevenueScreen';
+import { GymPassAlertScreen } from './components/GymPassAlertScreen';
 
 import { AddMemberModal } from './components/modals/AddMemberModal';
 import { RenewModal } from './components/modals/RenewModal';
 import { QRTerminalModal } from './components/modals/QRTerminalModal';
 import { CollectFeeModal } from './components/modals/CollectFeeModal';
 import { WhatsAppModal } from './components/modals/WhatsAppModal';
-import { GSTExportModal } from './components/modals/GSTExportModal';
 import { OwnerProfileModal } from './components/modals/OwnerProfileModal';
 import { MemberTelemetryModal } from './components/modals/MemberTelemetryModal';
+import { MemberProfileModal } from './components/modals/MemberProfileModal';
 
 import { NavigationTab, BranchLocation, Member, BillingItem } from './types';
 import { INITIAL_MEMBERS, INITIAL_BILLING_ITEMS } from './data/mockData';
@@ -21,7 +22,7 @@ import { Smartphone, Monitor, CheckCircle, Info } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
-  const [currentBranch, setCurrentBranch] = useState<BranchLocation>('Downtown Branch');
+  const [currentBranch, setCurrentBranch] = useState<BranchLocation>('Jatra Hotel');
   const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
   const [billingItems, setBillingItems] = useState<BillingItem[]>(INITIAL_BILLING_ITEMS);
 
@@ -44,9 +45,9 @@ export default function App() {
   const [selectedMemberForRenew, setSelectedMemberForRenew] = useState<Member | null>(null);
   const [isQRTerminalOpen, setIsQRTerminalOpen] = useState(false);
   const [isCollectFeeOpen, setIsCollectFeeOpen] = useState(false);
-  const [isGSTSummaryOpen, setIsGSTSummaryOpen] = useState(false);
   const [isOwnerProfileOpen, setIsOwnerProfileOpen] = useState(false);
   const [telemetryMember, setTelemetryMember] = useState<Member | null>(null);
+  const [profileMember, setProfileMember] = useState<Member | null>(null);
 
   // WhatsApp modal state
   const [whatsAppModalData, setWhatsAppModalData] = useState<{
@@ -64,17 +65,24 @@ export default function App() {
 
   // Action handlers
   const handleAddMember = (newMemberData: Partial<Member>) => {
+    const targetBranch =
+      newMemberData.branch ||
+      (currentBranch === 'All Locations' ? 'Jatra Hotel' : currentBranch);
     const newMember: Member = {
       id: `mem-${Date.now()}`,
       name: newMemberData.name || 'New Athlete',
-      plan: newMemberData.plan || 'Annual Gold',
-      branch: newMemberData.branch || currentBranch,
+      plan: newMemberData.plan || 'Monthly',
+      branch: targetBranch,
       status: 'active',
       lastActive: 'Enrolled today',
       phone: newMemberData.phone || '+91 98000 00000',
-      locker: newMemberData.locker || 'Locker #10',
+      email: newMemberData.email,
+      address: newMemberData.address,
+      membershipStartDate: newMemberData.membershipStartDate,
+      membershipEndDate: newMemberData.membershipEndDate,
+      locker: newMemberData.locker,
       isCheckedIn: false,
-      ltv: newMemberData.ltv || 24000,
+      ltv: newMemberData.ltv || 0,
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     };
     setMembers([newMember, ...members]);
@@ -164,6 +172,34 @@ export default function App() {
     }
   };
 
+  const handleSendPassAlert = (member: Member, kind: 'expiry' | 'overdue' | 'churn') => {
+    setWhatsAppModalData({
+      isOpen: true,
+      name: member.name,
+      phone: member.phone,
+      amount: kind === 'overdue' ? member.amountDue : undefined,
+      plan: member.plan,
+      type: kind,
+    });
+  };
+
+  const handleSendPassEmail = (member: Member) => {
+    if (!member.email) {
+      showToast(`${member.name} has no email registered on their profile`);
+      return;
+    }
+    const subject = 'Your MADABOLICX gym pass is about to expire';
+    const body = `Hi ${member.name},\n\nYour ${member.plan} pass at Madabolicx Fitness (${member.branch}) is expiring soon.\nRenew now to keep your training uninterrupted.\n\n1-tap renew: https://madabolicx.in/renew\n\n— MADABOLICX Front Desk`;
+    window.location.href = `mailto:${member.email}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+    showToast(`Renewal email composed for ${member.name}`);
+  };
+
+  const passAlertCount = members.filter(
+    (m) => m.status === 'expiring' || m.status === 'expired' || m.status === 'dormant'
+  ).length;
+
   return (
     <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex flex-col items-center justify-start selection:bg-[#0284c7] selection:text-white relative font-sans">
       {/* View Switcher Top Bar for breathing space & clean framing */}
@@ -242,7 +278,6 @@ export default function App() {
               onOpenCollectFee={() => setIsCollectFeeOpen(true)}
               onOpenWhatsAppNudge={(m) => handleOpenWhatsAppNudge(m)}
               onViewAllMembers={() => setActiveTab('members')}
-              onViewChurnRisk={() => setActiveTab('reports')}
             />
           )}
 
@@ -251,11 +286,10 @@ export default function App() {
               members={members}
               currentBranch={currentBranch}
               onOpenAddMember={() => setIsAddMemberOpen(true)}
-              onOpenRenewModal={(m) => handleOpenRenew(m)}
               onOpenQRTerminal={() => setIsQRTerminalOpen(true)}
-              onOpenWhatsAppNudge={(m) => handleOpenWhatsAppNudge(m)}
               onToggleCheckIn={handleToggleCheckIn}
               onOpenMemberTelemetry={(m) => setTelemetryMember(m)}
+              onOpenMemberProfile={setProfileMember}
             />
           )}
 
@@ -276,18 +310,18 @@ export default function App() {
           )}
 
           {activeTab === 'reports' && (
-            <ReportsScreen
-              currentBranch={currentBranch}
-              onOpenGSTSummary={() => setIsGSTSummaryOpen(true)}
+            <RevenueScreen
               onOpenExecutiveSnapshot={() => {
                 showToast('Executive daily snapshot generated and shared to WhatsApp');
               }}
-              onCallAthlete={(name, phone) => {
-                showToast(`Calling ${name} at ${phone}...`);
-              }}
-              onWhatsAppAthlete={(name, phone, plan) =>
-                handleOpenWhatsAppNudge(phone, name, undefined, plan)
-              }
+            />
+          )}
+        {activeTab === 'alerts' && (
+            <GymPassAlertScreen
+              members={members}
+              onSendWhatsApp={handleSendPassAlert}
+              onSendEmail={handleSendPassEmail}
+              onOpenRenew={(m) => handleOpenRenew(m)}
             />
           )}
         </main>
@@ -300,6 +334,7 @@ export default function App() {
             members: 0,
             billing: billingItems.length > 0 ? billingItems.length : undefined,
             reports: 0,
+            alerts: passAlertCount,
           }}
         />
       </div>
@@ -351,11 +386,6 @@ export default function App() {
         type={whatsAppModalData.type}
       />
 
-      <GSTExportModal
-        isOpen={isGSTSummaryOpen}
-        onClose={() => setIsGSTSummaryOpen(false)}
-      />
-
       <OwnerProfileModal
         isOpen={isOwnerProfileOpen}
         onClose={() => setIsOwnerProfileOpen(false)}
@@ -365,6 +395,12 @@ export default function App() {
         isOpen={!!telemetryMember}
         onClose={() => setTelemetryMember(null)}
         member={telemetryMember}
+      />
+
+      <MemberProfileModal
+        isOpen={!!profileMember}
+        onClose={() => setProfileMember(null)}
+        member={profileMember}
       />
     </div>
   );

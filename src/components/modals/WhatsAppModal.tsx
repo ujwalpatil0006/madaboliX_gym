@@ -20,21 +20,20 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   plan,
   type = 'expiry',
 }) => {
-  const [copied, setCopied] = useState(false);
-
-  if (!isOpen) return null;
-
   const cleanPhone = phone.replace(/[^0-9]/g, '');
 
-  let defaultMessage = `Hey ${recipientName}! 💪 This is Madabolicx Fitness Studio. Your ${plan || 'membership'} is ending soon. Renew today to keep your floor locker and uninterrupted biometric training access! Instant 1-tap link: https://madabolicx.in/pay/${cleanPhone}`;
+  let defaultMessage = `Hey ${recipientName}! 💪 This is Madabolicx Fitness Studio. Your ${plan || 'gym pass'} is expiring soon. Renew now to keep your training streak alive! Instant 1-tap renew: https://madabolicx.in/renew/${cleanPhone}`;
 
   if (type === 'overdue' || (amount && amount > 0)) {
     defaultMessage = `Hi ${recipientName}, reminder from Madabolicx Fitness Studio. Your renewal balance of ₹${amount?.toLocaleString()} for ${plan || 'membership'} is due. Please settle via UPI or visit the front desk: https://madabolicx.in/pay/${cleanPhone}`;
   } else if (type === 'churn') {
-    defaultMessage = `Hey ${recipientName}! We missed you at the Downtown Hub turnstile this week! 🏋️ Your coach has set up a custom metabolic re-entry session. Drop in anytime today!`;
+    defaultMessage = `Hey ${recipientName}! 🏋️ We missed you at MADABOLICX this week! Your coach has set up a custom re-entry session. Drop in anytime — your pass is still active!`;
   }
 
   const [message, setMessage] = useState(defaultMessage);
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen) return null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message);

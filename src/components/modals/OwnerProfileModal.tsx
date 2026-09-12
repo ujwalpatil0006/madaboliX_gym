@@ -58,10 +58,6 @@ export const OwnerProfileModal: React.FC<OwnerProfileModalProps> = ({ isOpen, on
               <span className="font-mono font-bold text-[#006194]">MADABOLICX-MUM-01</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-mono">GST REGISTRATION:</span>
-              <span className="font-mono text-slate-800">27AAECM5541L1Z9</span>
-            </div>
-            <div className="flex items-center justify-between">
               <span className="text-slate-500 font-mono">CONNECTED BRANCHES:</span>
               <span className="font-bold text-[#0b1c30]">2 Facilities Active</span>
             </div>
