@@ -7,6 +7,7 @@ import {
   Phone,
   UserX,
   CalendarX2,
+  FlaskConical,
 } from 'lucide-react';
 import { Member } from '../types';
 
@@ -15,6 +16,7 @@ interface GymPassAlertScreenProps {
   onSendWhatsApp: (member: Member, kind: 'expiry' | 'overdue' | 'churn') => void;
   onSendEmail: (member: Member) => void;
   onOpenRenew: (member: Member) => void;
+  onSendTestAutomation?: () => void;
 }
 
 type AlertKind = 'expiry' | 'overdue' | 'churn';
@@ -42,6 +44,7 @@ export const GymPassAlertScreen: React.FC<GymPassAlertScreenProps> = ({
   onSendWhatsApp,
   onSendEmail,
   onOpenRenew,
+  onSendTestAutomation,
 }) => {
   const expiring = members
     .filter((m) => m.status === 'expiring')
@@ -95,9 +98,22 @@ export const GymPassAlertScreen: React.FC<GymPassAlertScreenProps> = ({
           </h1>
         </div>
 
-        <span className="px-3 py-1.5 rounded-full bg-[#fff5f5] border border-[#ffd6d1] text-[#b91c1c] text-xs font-mono font-bold shadow-xs">
-          {totalAlerts} Alerts
-        </span>
+        <div className="flex items-center gap-2">
+          {onSendTestAutomation && (
+            <button
+              type="button"
+              onClick={onSendTestAutomation}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#e0f2fe] border border-[#bae6fd] text-[#006194] text-[11px] font-mono font-bold shadow-xs hover:bg-[#bae6fd] transition-all"
+              title="Creates a dummy athlete and sends a real-time WhatsApp renewal message"
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              Test Automation
+            </button>
+          )}
+          <span className="px-3 py-1.5 rounded-full bg-[#fff5f5] border border-[#ffd6d1] text-[#b91c1c] text-xs font-mono font-bold shadow-xs">
+            {totalAlerts} Alerts
+          </span>
+        </div>
       </div>
 
       {/* Master action strip */}

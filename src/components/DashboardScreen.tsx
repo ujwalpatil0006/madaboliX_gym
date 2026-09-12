@@ -14,6 +14,14 @@ import { Member, BranchLocation } from '../types';
 interface DashboardScreenProps {
   currentBranch: BranchLocation;
   members: Member[];
+  overview?: {
+    monthlyRevenueRunRate?: number;
+    activeMembers?: number;
+    expiringCount?: number;
+    overdueCount?: number;
+    pendingCollection?: number;
+  };
+  branchAnalytics?: Array<{ name: string; mrrRunRate: number; activeCount: number; capacityUtilization?: number }>;
   onOpenAddMember: () => void;
   onOpenRenewModal: (member?: Member) => void;
   onOpenQRTerminal: () => void;
@@ -24,6 +32,8 @@ interface DashboardScreenProps {
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   currentBranch,
   members,
+  overview,
+  branchAnalytics,
   onOpenAddMember,
   onOpenRenewModal,
   onOpenQRTerminal,
@@ -32,10 +42,23 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 }) => {
   const [selectedDate, setSelectedDate] = useState('Today, Oct 24');
 
-  // Filter urgent attention members
+  // Urgent attention members (branch already filtered upstream)
   const needsAttentionMembers = members.filter(
-    (m) => m.id === 'mem-5' || m.id === 'mem-6'
+    (m) => m.status === 'expiring' || m.status === 'expired'
   );
+  const renewalPipeline = needsAttentionMembers.reduce((acc, m) => acc + (m.amountDue || 0), 0);
+
+  // Monthly revenue run-rate (branch-aware overview)
+  const mrr = overview?.monthlyRevenueRunRate;
+  const mrrText = mrr ? `₹${mrr.toLocaleString('en-IN')}` : '₹1,48,500';
+  const arrText = mrr ? `ARR: ₹${((mrr * 12) / 100000).toFixed(1)}L run rate` : 'ARR: ₹17.8L run rate';
+
+  // Revenue distribution rows (only selected branch, or combined for All Locations)
+  const branchRows = branchAnalytics
+    ? branchAnalytics.filter((b) => currentBranch === 'All Locations' || b.name === currentBranch)
+    : [];
+  const branchTotal = branchRows.reduce((acc, b) => acc + b.mrrRunRate, 0);
+  const rowColor: Record<string, string> = { 'Jatra Hotel': '#0284c7', Adgaon: '#38bdf8' };
 
   return (
     <div className="space-y-4 pb-20 animate-in fade-in duration-200">
@@ -80,10 +103,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
           <div className="mt-2">
             <div className="text-xl sm:text-2xl font-bold font-display text-[#0b1c30]">
-              ₹1,48,500
+              {mrrText}
             </div>
             <div className="text-[11px] font-mono text-[#64748b] mt-0.5">
-              ARR: <span className="font-semibold text-[#0b1c30]">₹17.8L</span> run rate
+              {arrText}
             </div>
           </div>
 
@@ -103,14 +126,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <div className="mt-2">
             <div className="flex items-baseline gap-1.5">
               <span className="text-xl sm:text-2xl font-bold font-display text-[#0b1c30]">
-                14
+                {needsAttentionMembers.length || '0'}
               </span>
               <span className="text-xs font-mono font-semibold text-[#64748b]">
                 due
               </span>
             </div>
             <div className="text-[11px] font-mono text-[#006194] font-semibold mt-0.5">
-              ₹38,200 pipeline
+              ₹{(renewalPipeline || 38200).toLocaleString('en-IN')} pipeline
             </div>
           </div>
         </div>
@@ -209,37 +232,37 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </div>
         </div>
 
-        {/* Jatra Hotel Row */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 font-semibold text-[#0b1c30]">
-              <span className="w-2 h-2 rounded-full bg-[#0284c7]" />
-              Jatra Hotel
-            </span>
-            <span className="font-mono font-semibold text-[#0b1c30]">
-              ₹88,000 <span className="text-[#64748b] font-normal">(59%)</span>
-            </span>
+        {/* Branch Performance Rows (filtered to selected branch or combined) */}
+        {branchRows.length > 0 ? (
+          branchRows.map((b) => {
+            const share = branchTotal > 0 ? Math.round((b.mrrRunRate / branchTotal) * 100) : 0;
+            const color = rowColor[b.name] || '#0284c7';
+            return (
+              <div key={b.name} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 font-semibold text-[#0b1c30]">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                    {b.name}
+                  </span>
+                  <span className="font-mono font-semibold text-[#0b1c30]">
+                    ₹{b.mrrRunRate.toLocaleString('en-IN')}{' '}
+                    <span className="text-[#64748b] font-normal">({share}%)</span>
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-[#eff4ff] overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: color, width: `${currentBranch === 'All Locations' ? share : 100}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="p-3 rounded-xl bg-[#f8faff] border border-slate-100 text-center">
+            <span className="text-xs text-[#64748b]">No analytics for {currentBranch} yet</span>
           </div>
-          <div className="w-full h-2 rounded-full bg-[#eff4ff] overflow-hidden">
-            <div className="h-full bg-[#0284c7] rounded-full w-[59%]" />
-          </div>
-        </div>
-
-        {/* Adgaon Row */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 font-semibold text-[#0b1c30]">
-              <span className="w-2 h-2 rounded-full bg-[#38bdf8]" />
-              Adgaon
-            </span>
-            <span className="font-mono font-semibold text-[#0b1c30]">
-              ₹60,500 <span className="text-[#64748b] font-normal">(41%)</span>
-            </span>
-          </div>
-          <div className="w-full h-2 rounded-full bg-[#eff4ff] overflow-hidden">
-            <div className="h-full bg-[#38bdf8] rounded-full w-[41%]" />
-          </div>
-        </div>
+        )}
 
         {/* 14-Day Velocity Curve Chart */}
         <div className="pt-2 border-t border-slate-100">
@@ -288,7 +311,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               Needs Attention
             </h3>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold text-[#ba1a1a] border border-[#ffdad6] bg-[#fff5f5]">
-              2 Expiring Today
+              {needsAttentionMembers.length > 0 ? `${needsAttentionMembers.length} Expiring` : 'All Clear'}
             </span>
           </div>
 
