@@ -1,0 +1,6 @@
+{
+  "name": "Madabolicx Fitness Studio",
+  "description": "Executive operations, athlete telemetry, billing cycle automation, and owner intelligence for Madabolicx Fitness Studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
